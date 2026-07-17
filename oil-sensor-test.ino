@@ -2,7 +2,7 @@
  * Oil Level Sensor Test - ESP32 C3 SuperMini
  * 
  * Tests a 3-reed-switch oil level sensor:
- *   Pin 1 (Uv) → 3.3V
+ *   Pin 1 (Uv) → GND (sensor common)
  *   Pin 2 (Min) → GPIO2 (Schließer / NO — pulls LOW when magnet present)
  *   Pin 3 (Min/Max) → GPIO3 (Öffner / NC — pulls LOW when magnet present)
  *   Pin 4 (Max) → GPIO4 (Öffner / NC — pulls LOW when magnet present)
