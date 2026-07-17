@@ -193,12 +193,12 @@ function update() {
   fetch('/status')
     .then(r => r.json())
     .then(d => {
-      // Min (Schließer): active = magnet present = Stromkreis geschlossen
-      setLamp('lampMin', 'cardMin', 'stateMin', d.min, 'Stromkreis geschlossen', 'Stromkreis offen');
-      // Min/Max (Öffner): active = Stromkreis geschlossen = kein Magnet
-      setLamp('lampMinMax', 'cardMinMax', 'stateMinMax', d.minmax, 'Stromkreis geschlossen', 'Stromkreis offen');
-      // Max (Öffner): active = Stromkreis geschlossen = kein Magnet
-      setLamp('lampMax', 'cardMax', 'stateMax', d.max, 'Stromkreis geschlossen', 'Stromkreis offen');
+      // Min (Schließer): active = Magnet erkannt = betätigt
+      setLamp('lampMin', 'cardMin', 'stateMin', d.min, 'Betätigt', 'Nicht betätigt');
+      // Min/Max (Öffner): active = Magnet erkannt = betätigt
+      setLamp('lampMinMax', 'cardMinMax', 'stateMinMax', d.minmax, 'Betätigt', 'Nicht betätigt');
+      // Max (Öffner): active = Magnet erkannt = betätigt
+      setLamp('lampMax', 'cardMax', 'stateMax', d.max, 'Betätigt', 'Nicht betätigt');
     })
     .catch(() => {
       document.getElementById('liveDot').style.background = '#e94560';
@@ -237,11 +237,11 @@ void handleRoot() {
 
 void handleStatus() {
   // Reed switches: LOW = switch closed (to GND via pull-up)
-  // Schließer (NO): closed = magnet present = active
-  // Öffner (NC): closed = no magnet = circuit intact = active
+  // Schließer (NO): closed = magnet present = active → GREEN
+  // Öffner (NC): open = magnet present = active → GREEN
   bool minActive    = (digitalRead(PIN_MIN) == LOW);    // Schließer: closed = active
-  bool minmaxActive = (digitalRead(PIN_MINMAX) == HIGH); // Öffner: closed = active
-  bool maxActive    = (digitalRead(PIN_MAX) == HIGH);    // Öffner: closed = active
+  bool minmaxActive = (digitalRead(PIN_MINMAX) == HIGH); // Öffner: open = active
+  bool maxActive    = (digitalRead(PIN_MAX) == HIGH);    // Öffner: open = active
 
   String json = "{";
   json += "\"min\":" + String(minActive ? "true" : "false") + ",";
