@@ -10,6 +10,7 @@
  * ESP32 internal pull-ups enabled, no external components needed.
  * Pure Access Point — no external network.
  * Web UI shows live switch states with auto-refresh.
+ * Onboard LED lights up when any switch is activated.
  */
 
 #include <WiFi.h>
@@ -23,6 +24,7 @@ const char* AP_PASS = NULL;  // open network, no password
 const int PIN_MIN    = 2;   // Reed 1: Schließer (NO)
 const int PIN_MINMAX = 3;   // Reed 2: Öffner (NC)
 const int PIN_MAX    = 4;   // Reed 3: Öffner (NC)
+const int PIN_LED    = 8;   // Onboard LED (active LOW)
 
 WebServer server(80);
 
@@ -193,11 +195,8 @@ function update() {
   fetch('/status')
     .then(r => r.json())
     .then(d => {
-      // Min (Schließer): active = Magnet erkannt = betätigt
       setLamp('lampMin', 'cardMin', 'stateMin', d.min, 'Betätigt', 'Nicht betätigt');
-      // Min/Max (Öffner): active = Magnet erkannt = betätigt
       setLamp('lampMinMax', 'cardMinMax', 'stateMinMax', d.minmax, 'Betätigt', 'Nicht betätigt');
-      // Max (Öffner): active = Magnet erkannt = betätigt
       setLamp('lampMax', 'cardMax', 'stateMax', d.max, 'Betätigt', 'Nicht betätigt');
     })
     .catch(() => {
@@ -236,12 +235,13 @@ void handleRoot() {
 }
 
 void handleStatus() {
-  // Reed switches: LOW = switch closed (to GND via pull-up)
-  // Schließer (NO): closed = magnet present = active → GREEN
-  // Öffner (NC): open = magnet present = active → GREEN
-  bool minActive    = (digitalRead(PIN_MIN) == LOW);    // Schließer: closed = active
-  bool minmaxActive = (digitalRead(PIN_MINMAX) == HIGH); // Öffner: open = active
-  bool maxActive    = (digitalRead(PIN_MAX) == HIGH);    // Öffner: open = active
+  bool minActive    = (digitalRead(PIN_MIN) == LOW);     // Schließer: closed = active
+  bool minmaxActive = (digitalRead(PIN_MINMAX) == HIGH);  // Öffner: open = active
+  bool maxActive    = (digitalRead(PIN_MAX) == HIGH);     // Öffner: open = active
+
+  // Onboard LED: ON if any switch is activated
+  bool anyActive = minActive || minmaxActive || maxActive;
+  digitalWrite(PIN_LED, anyActive ? LOW : HIGH);  // active LOW
 
   String json = "{";
   json += "\"min\":" + String(minActive ? "true" : "false") + ",";
@@ -256,10 +256,12 @@ void setup() {
   Serial.begin(115200);
   Serial.println("\n=== Oil Level Sensor Test ===");
 
-  // Configure GPIOs with internal pull-ups
+  // Configure GPIOs
   pinMode(PIN_MIN, INPUT_PULLUP);
   pinMode(PIN_MINMAX, INPUT_PULLUP);
   pinMode(PIN_MAX, INPUT_PULLUP);
+  pinMode(PIN_LED, OUTPUT);
+  digitalWrite(PIN_LED, HIGH);  // LED off (active LOW)
 
   // Start Access Point
   WiFi.mode(WIFI_AP);
