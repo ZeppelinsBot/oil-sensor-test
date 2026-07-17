@@ -17,7 +17,7 @@
 
 // --- Configuration ---
 const char* AP_SSID = "OilSensorTest";
-const char* AP_PASS = "12345678";  // min 8 chars
+const char* AP_PASS = NULL;  // open network, no password
 
 // GPIO pins (ESP32 C3 SuperMini)
 const int PIN_MIN    = 2;   // Reed 1: Schließer (NO)
@@ -193,12 +193,12 @@ function update() {
   fetch('/status')
     .then(r => r.json())
     .then(d => {
-      // Min (Schließer): active=1 means magnet present (oil at min)
-      setLamp('lampMin', 'cardMin', 'stateMin', d.min, 'Min detected', 'No magnet');
-      // Min/Max (Öffner): active=0 means magnet present
-      setLamp('lampMinMax', 'cardMinMax', 'stateMinMax', d.minmax, 'Nachfüllen detected', 'No magnet');
-      // Max (Öffner): active=0 means magnet present
-      setLamp('lampMax', 'cardMax', 'stateMax', d.max, 'Max detected', 'No magnet');
+      // Min (Schließer): active = magnet present = Stromkreis geschlossen
+      setLamp('lampMin', 'cardMin', 'stateMin', d.min, 'Stromkreis geschlossen', 'Stromkreis offen');
+      // Min/Max (Öffner): active = Stromkreis geschlossen = kein Magnet
+      setLamp('lampMinMax', 'cardMinMax', 'stateMinMax', d.minmax, 'Stromkreis geschlossen', 'Stromkreis offen');
+      // Max (Öffner): active = Stromkreis geschlossen = kein Magnet
+      setLamp('lampMax', 'cardMax', 'stateMax', d.max, 'Stromkreis geschlossen', 'Stromkreis offen');
     })
     .catch(() => {
       document.getElementById('liveDot').style.background = '#e94560';
@@ -236,10 +236,12 @@ void handleRoot() {
 }
 
 void handleStatus() {
-  // Reed switches: LOW = magnet detected (pull-up → switch to GND)
-  bool minActive    = (digitalRead(PIN_MIN) == LOW);
-  bool minmaxActive = (digitalRead(PIN_MINMAX) == LOW);
-  bool maxActive    = (digitalRead(PIN_MAX) == LOW);
+  // Reed switches: LOW = switch closed (to GND via pull-up)
+  // Schließer (NO): closed = magnet present = active
+  // Öffner (NC): closed = no magnet = circuit intact = active
+  bool minActive    = (digitalRead(PIN_MIN) == LOW);    // Schließer: closed = active
+  bool minmaxActive = (digitalRead(PIN_MINMAX) == HIGH); // Öffner: closed = active
+  bool maxActive    = (digitalRead(PIN_MAX) == HIGH);    // Öffner: closed = active
 
   String json = "{";
   json += "\"min\":" + String(minActive ? "true" : "false") + ",";
