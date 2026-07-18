@@ -233,23 +233,10 @@ update();
 )rawliteral";
 
 void handleCaptivePortal() {
-  // Captive portal detection URLs — minimal response so OS triggers the popup
-  String url = server.uri();
-  if (url.indexOf("/generate_204") >= 0 ||         // Android
-      url.indexOf("/gen_204") >= 0 ||              // Android alt
-      url.indexOf("/hotspot-detect.html") >= 0 ||  // iOS
-      url.indexOf("/success.txt") >= 0 ||          // Android alt
-      url.indexOf("/connecttest.txt") >= 0 ||      // Windows
-      url.indexOf("/ncsi.txt") >= 0 ||             // Windows
-      url.indexOf("/redirect") >= 0 ||             // Windows
-      url.indexOf("/kindle-wifi/wifistub.html") >= 0) { // Kindle
-    server.send(200, "text/html",
-      "<!DOCTYPE html><html><head><title>Success</title></head><body>Success</body></html>");
-  } else {
-    // Everything else → redirect to the setup page
-    server.sendHeader("Location", String("http://") + WiFi.softAPIP().toString() + "/", true);
-    server.send(302, "text/plain", "");
-  }
+  // Redirect ALL requests (including OS detection URLs) to the setup page.
+  // The 302 redirect tells the OS "you're behind a captive portal" → triggers the popup.
+  server.sendHeader("Location", String("http://") + WiFi.softAPIP().toString() + "/", true);
+  server.send(302, "text/plain", "");
 }
 
 // --- Handlers ---
