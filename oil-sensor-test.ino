@@ -15,7 +15,6 @@
 
 #include <WiFi.h>
 #include <WebServer.h>
-#include <DNSServer.h>
 
 // --- Configuration ---
 const char* AP_SSID = "OilSensorTest";
@@ -28,8 +27,6 @@ const int PIN_MAX    = 4;   // Reed 3: Öffner (NC)
 const int PIN_LED    = 8;   // Onboard LED (active LOW)
 
 WebServer server(80);
-DNSServer dnsServer;
-const byte DNS_PORT = 53;
 
 // --- HTML Page ---
 const char PAGE_HTML[] PROGMEM = R"rawliteral(
@@ -232,13 +229,6 @@ update();
 </html>
 )rawliteral";
 
-void handleCaptivePortal() {
-  // Redirect ALL requests (including OS detection URLs) to the setup page.
-  // The 302 redirect tells the OS "you're behind a captive portal" → triggers the popup.
-  server.sendHeader("Location", String("http://") + WiFi.softAPIP().toString() + "/", true);
-  server.send(302, "text/plain", "");
-}
-
 // --- Handlers ---
 void handleRoot() {
   server.send_P(200, "text/html", PAGE_HTML);
@@ -287,25 +277,13 @@ void setup() {
   // Setup web server
   server.on("/", handleRoot);
   server.on("/status", handleStatus);
-  // Captive portal detection — answer all known OS probe URLs
-  server.on("/generate_204", HTTP_GET, handleCaptivePortal);
-  server.on("/gen_204", HTTP_GET, handleCaptivePortal);
-  server.on("/hotspot-detect.html", HTTP_GET, handleCaptivePortal);
-  server.on("/success.txt", HTTP_GET, handleCaptivePortal);
-  server.on("/connecttest.txt", HTTP_GET, handleCaptivePortal);
-  server.on("/ncsi.txt", HTTP_GET, handleCaptivePortal);
-  server.on("/redirect", HTTP_GET, handleCaptivePortal);
-  server.on("/kindle-wifi/wifistub.html", HTTP_GET, handleCaptivePortal);
-  server.onNotFound(handleCaptivePortal);  // catch-all → redirect
   server.begin();
   Serial.println("Web server started on port 80");
-
-  // Start DNS server — redirects ALL domains to the AP IP
-  dnsServer.start(DNS_PORT, "", WiFi.softAPIP());
-  Serial.println("DNS server started — captive portal active");
+  Serial.print("Open http://");
+  Serial.print(ip);
+  Serial.println(" in browser");
 }
 
 void loop() {
   server.handleClient();
-  dnsServer.processNextRequest();
 }
